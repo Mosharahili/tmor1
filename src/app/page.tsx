@@ -1,103 +1,204 @@
-import Image from "next/image";
+"use client";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { Product, Auction, OrderItem } from "@prisma/client";
+import HamburgerMenu from "@/components/HamburgerMenu";
 
-export default function Home() {
+type AuctionWithBids = {
+  id: string;
+  title: string;
+  description: string;
+  startPrice: number;
+  currentPrice: number;
+  startDate: Date;
+  endDate: Date | null;
+  status: "UPCOMING" | "ACTIVE" | "ENDED";
+  images: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  bids: {
+    id: string;
+    amount: number;
+    createdAt: Date;
+    userId: string;
+    auctionId: string;
+  }[];
+};
+
+type ProductWithOrderItems = Product & {
+  orderItems: OrderItem[];
+};
+
+type Settings = {
+  id: string;
+  siteName: string;
+  siteDescription: string;
+  heroTitle: string;
+  heroDescription: string;
+  primaryColor: string;
+  secondaryColor: string;
+  showFeaturedAuctions: boolean;
+  showFeaturedProducts: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+async function getActiveAuctions(): Promise<AuctionWithBids[]> {
+  const auctions = await prisma.auction.findMany({
+    where: {
+      status: "ACTIVE",
+    },
+    include: {
+      bids: {
+        orderBy: {
+          amount: "desc",
+        },
+        take: 1,
+      },
+    },
+    take: 4,
+  });
+  return auctions;
+}
+
+async function getUpcomingAuctions(): Promise<AuctionWithBids[]> {
+  const auctions = await prisma.auction.findMany({
+    where: {
+      status: "UPCOMING",
+    },
+    orderBy: {
+      startDate: "asc",
+    },
+    take: 4,
+  });
+  return auctions;
+}
+
+async function getTopSellingProducts(): Promise<ProductWithOrderItems[]> {
+  const products = await prisma.product.findMany({
+    take: 4,
+    orderBy: {
+      orderItems: {
+        _count: 'desc'
+      }
+    },
+    include: {
+      orderItems: true
+    }
+  });
+  return products as ProductWithOrderItems[];
+}
+
+async function getNewestProducts(): Promise<ProductWithOrderItems[]> {
+  const products = await prisma.product.findMany({
+    take: 4,
+    orderBy: {
+      createdAt: 'desc'
+    },
+    include: {
+      orderItems: true
+    }
+  });
+  return products as ProductWithOrderItems[];
+}
+
+async function getSettings(): Promise<Settings> {
+  const settings = await prisma.settings.findFirst();
+  return settings || {
+    id: "1",
+    siteName: "تمور",
+    siteDescription: "منصة المزادات والمنتجات الرائدة",
+    heroTitle: "مرحبا بك في تمور",
+    heroDescription: "منصة المزادات والمنتجات الرائدة",
+    primaryColor: "#16a34a",
+    secondaryColor: "#15803d",
+    showFeaturedAuctions: true,
+    showFeaturedProducts: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+export default function HomePage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="min-h-screen bg-gradient-to-b from-green-50 to-yellow-50">
+      <HamburgerMenu />
+      {/* Hero Section */}
+      <section className="py-16 px-4 text-center bg-gradient-to-r from-green-600 to-yellow-500 text-white mb-8">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-4">مرحبا بك في تمور</h1>
+        <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
+          اكتشف أفضل أنواع التمور، مزارع التمور، والمزادات الحية لشراء أجود التمور مباشرة من المصدر.
+        </p>
+        <div className="flex flex-col md:flex-row justify-center gap-4">
+          <a href="/store" className="bg-white text-yellow-700 font-bold px-8 py-3 rounded-lg shadow hover:bg-yellow-100 transition">المتجر</a>
+          <a href="/farms" className="bg-white text-green-900 font-bold px-8 py-3 rounded-lg shadow hover:bg-green-200 transition">مزارع التمور</a>
+          <a href="/about" className="bg-white text-gray-800 font-bold px-8 py-3 rounded-lg shadow hover:bg-gray-100 transition">عن المنصة</a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* Featured Dates Section */}
+      <section className="py-12 px-4 max-w-2xl mx-auto flex flex-col gap-8 mb-8">
+        <h2 className="text-2xl font-bold text-center text-green-800 mb-4">أشهر أنواع التمور</h2>
+        <div className="flex flex-col gap-8">
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <img src="/dates-ajwa.jpg" alt="عجوة" className="w-32 h-32 object-cover rounded-full mb-4" />
+            <h3 className="text-xl font-semibold text-green-700 mb-2">عجوة</h3>
+            <p className="text-gray-600">تمور عجوة من المدينة المنورة، ذات طعم مميز وقيمة غذائية عالية.</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <img src="/dates-sukkary.jpg" alt="سكري" className="w-32 h-32 object-cover rounded-full mb-4" />
+            <h3 className="text-xl font-semibold text-yellow-700 mb-2">سكري</h3>
+            <p className="text-gray-600">تمور سكري مشهورة بحلاوتها وقوامها الطري، مثالية للضيافة.</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <img src="/dates-khlas.jpg" alt="خلاص" className="w-32 h-32 object-cover rounded-full mb-4" />
+            <h3 className="text-xl font-semibold text-green-900 mb-2">خلاص</h3>
+            <p className="text-gray-600">تمور خلاص من أشهر الأنواع في المملكة، معروفة بجودتها العالية.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Farms Section */}
+      <section className="py-12 px-4 max-w-2xl mx-auto flex flex-col gap-8 mb-8 bg-green-50 rounded-xl">
+        <h2 className="text-2xl font-bold text-center text-green-800 mb-4">مزارع التمور المميزة</h2>
+        <div className="flex flex-col gap-8">
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <img src="/farm1.jpg" alt="مزرعة النخيل الذهبية" className="w-40 h-28 object-cover rounded mb-4" />
+            <h3 className="text-lg font-semibold text-green-700 mb-2">مزرعة النخيل الذهبية</h3>
+            <p className="text-gray-600">إحدى أعرق مزارع التمور في القصيم، تقدم أجود أنواع التمور المحلية.</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+            <img src="/farm2.jpg" alt="مزرعة الواحة" className="w-40 h-28 object-cover rounded mb-4" />
+            <h3 className="text-lg font-semibold text-green-900 mb-2">مزرعة الواحة</h3>
+            <p className="text-gray-600">مزرعة متخصصة في إنتاج تمور عجوة وسكري عالية الجودة.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Date Types Section */}
+      <section className="py-12 px-4 max-w-2xl mx-auto flex flex-col gap-4 mb-8">
+        <h2 className="text-2xl font-bold text-center text-yellow-700 mb-4">أنواع التمور</h2>
+        <div className="flex flex-row flex-wrap justify-center gap-4 items-center">
+          <span className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-semibold">عجوة</span>
+          <span className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold">سكري</span>
+          <span className="bg-yellow-200 text-yellow-900 px-4 py-2 rounded-full font-semibold">خلاص</span>
+          <span className="bg-green-200 text-green-900 px-4 py-2 rounded-full font-semibold">برني</span>
+          <span className="bg-yellow-50 text-yellow-700 px-4 py-2 rounded-full font-semibold">صفاوي</span>
+          <span className="bg-green-50 text-green-700 px-4 py-2 rounded-full font-semibold">مجدول</span>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 text-center text-gray-500 bg-white border-t mt-8">
+        <div className="mb-2">© {new Date().getFullYear()} منصة تمور - جميع الحقوق محفوظة</div>
+        <div className="flex justify-center gap-6 text-sm">
+          <a href="/about" className="hover:underline">عن المنصة</a>
+          <a href="/contact" className="hover:underline">تواصل معنا</a>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 }

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Settings" ADD COLUMN     "minimumWalletDeposit" DOUBLE PRECISION NOT NULL DEFAULT 500;
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "walletBalance" DOUBLE PRECISION NOT NULL DEFAULT 0;
