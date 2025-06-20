@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '../../../auth/[...nextauth]/route';
+import { authOptions } from '../../auth/[...nextauth]/route';
+import { AuctionStatus } from '@prisma/client';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -34,14 +35,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'لم يتم العثور على المزاد' }, { status: 404 });
     }
 
-    if (auction.status !== 'active') {
+    if (auction.status !== AuctionStatus.ACTIVE) {
       return NextResponse.json({ message: 'المزاد غير نشط' }, { status: 400 });
     }
 
     const bidAmount = parseFloat(amount);
     const currentHighestBid = auction.bids.length > 0 
       ? auction.bids[0].amount
-      : auction.startingPrice;
+      : auction.startPrice;
 
     if (bidAmount <= currentHighestBid) {
       return NextResponse.json({ 

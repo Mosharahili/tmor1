@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '../../../auth/[...nextauth]/route';
+import { authOptions } from '../../auth/[...nextauth]/route';
+import { AuctionStatus } from '@prisma/client';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -21,15 +22,21 @@ export async function POST(req: Request) {
   }
 
   try {
+    const startDate = new Date(startTime);
+    const endDate = new Date(startDate.getTime() + parseInt(duration) * 60 * 1000);
+    const startPrice = parseFloat(startingPrice);
+
     const auction = await prisma.auction.create({
       data: {
         title,
         description,
-        startingPrice: parseFloat(startingPrice),
-        startTime: new Date(startTime),
-        duration: parseInt(duration),
-        status: 'pending'
-      }
+        startPrice: startPrice,
+        currentPrice: startPrice,
+        startDate: startDate,
+        endDate: endDate,
+        status: AuctionStatus.UPCOMING,
+        images: [],
+      },
     });
 
     return NextResponse.json({ message: 'تم إضافة المزاد بنجاح', auction });
