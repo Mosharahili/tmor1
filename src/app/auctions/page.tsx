@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import { FaGavel, FaClock, FaMoneyBillWave, FaVideo, FaStop, FaCircle } from 'react-icons/fa';
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import LiveVideo from '@/components/LiveVideo';
+import dynamic from 'next/dynamic';
+
+const LiveVideo = dynamic(() => import('@/components/LiveVideo'), {
+  ssr: false,
+  loading: () => <p>Loading video stream...</p>,
+});
 
 interface Auction {
   id: string;
@@ -33,6 +38,7 @@ export default function AuctionsPage() {
   const [showBidModal, setShowBidModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{ [key: string]: string }>({});
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [showLive, setShowLive] = useState(false);
   
   // Live video states
   const [isStreaming, setIsStreaming] = useState(false);
@@ -381,122 +387,137 @@ export default function AuctionsPage() {
   if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
 
   return (
-    <main className="min-h-screen">
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">المزادات</h1>
-
-      {/* Global Live Video Section */}
-      <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">البث المباشر للمزادات</h2>
-          <LiveVideo auctionId="global-auctions-stream" isOwner={!!isAdminOrOwner} />
+    <main className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">المزادات</h1>
+        {isAdminOrOwner && (
+          <Link href="/dashboard/auctions/new" className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+            <FaGavel />
+            <span>إضافة مزاد جديد</span>
+          </Link>
+        )}
       </div>
 
-      {/* Auctions List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {auctions.map((auction) => (
-          <div key={auction.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">{auction.title}</h2>
-              <p className="text-gray-600 mb-4">{auction.description}</p>
-              
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-gray-700">
-                  <FaMoneyBillWave className="ml-2" />
-                  <span>السعر الابتدائي: {auction.startPrice} ريال</span>
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <FaGavel className="ml-2" />
-                  <span>أعلى مزايدة: {auction.currentPrice} ريال</span>
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <FaClock className="ml-2" />
-                  <span>تاريخ البداية: {new Date(auction.startDate).toLocaleString('ar-SA')}</span>
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <span>الحالة: {
-                    auction.status === 'UPCOMING' ? 'قريباً' :
-                    auction.status === 'ACTIVE' ? 'نشط' : 'منتهي'
-                  }</span>
-                </div>
-              </div>
+      <button onClick={() => setShowLive(!showLive)} className="mb-4 bg-blue-500 text-white px-4 py-2 rounded">
+        {showLive ? 'Hide Live Stream' : 'Show Live Stream'}
+      </button>
 
-              {/* Management buttons for owners/admins */}
-              {canManageAuction(auction) && (
-                <div className="space-y-2 mb-4">
-                  {auction.status === 'UPCOMING' && (
+      {showLive && <LiveVideo channelName="global-auctions-stream" />}
+
+      {isLoading ? (
+        <p>جاري تحميل المزادات...</p>
+      ) : error ? (
+        <div className="text-center text-red-500 p-8">{error}</div>
+      ) : (
+        <>
+          {/* Auctions List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {auctions.map((auction) => (
+              <div key={auction.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="p-6">
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">{auction.title}</h2>
+                  <p className="text-gray-600 mb-4">{auction.description}</p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-gray-700">
+                      <FaMoneyBillWave className="ml-2" />
+                      <span>السعر الابتدائي: {auction.startPrice} ريال</span>
+                    </div>
+                    <div className="flex items-center text-gray-700">
+                      <FaGavel className="ml-2" />
+                      <span>أعلى مزايدة: {auction.currentPrice} ريال</span>
+                    </div>
+                    <div className="flex items-center text-gray-700">
+                      <FaClock className="ml-2" />
+                      <span>تاريخ البداية: {new Date(auction.startDate).toLocaleString('ar-SA')}</span>
+                    </div>
+                    <div className="flex items-center text-gray-700">
+                      <span>الحالة: {
+                        auction.status === 'UPCOMING' ? 'قريباً' :
+                        auction.status === 'ACTIVE' ? 'نشط' : 'منتهي'
+                      }</span>
+                    </div>
+                  </div>
+
+                  {/* Management buttons for owners/admins */}
+                  {canManageAuction(auction) && (
+                    <div className="space-y-2 mb-4">
+                      {auction.status === 'UPCOMING' && (
+                        <button
+                          onClick={() => handleStartAuction(auction.id)}
+                          className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+                        >
+                          بدء المزاد
+                        </button>
+                      )}
+                      {auction.status === 'ACTIVE' && (
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => handleEndAuction(auction.id)}
+                            className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600"
+                          >
+                            إنهاء المزاد
+                          </button>
+                          <button
+                            onClick={() => handleCancelAuction(auction.id)}
+                            className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600"
+                          >
+                            إلغاء المزاد
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bid button for regular users only */}
+                  {auction.status === "ACTIVE" && canBid(auction) && (
                     <button
-                      onClick={() => handleStartAuction(auction.id)}
-                      className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+                      onClick={() => {
+                        setSelectedAuction(auction);
+                        setShowBidModal(true);
+                      }}
+                      className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 mt-2"
                     >
-                      بدء المزاد
+                      تقديم مزايدة
                     </button>
                   )}
-                  {auction.status === 'ACTIVE' && (
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => handleEndAuction(auction.id)}
-                        className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600"
-                      >
-                        إنهاء المزاد
-                      </button>
-                      <button
-                        onClick={() => handleCancelAuction(auction.id)}
-                        className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600"
-                      >
-                        إلغاء المزاد
-                      </button>
+
+                  {/* View auction details for all users */}
+                  <Link
+                    href={`/auctions/${auction.id}`}
+                    className="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 block text-center mt-2"
+                  >
+                    عرض تفاصيل المزاد
+                  </Link>
+
+                  {auction.status === "ENDED" && (
+                    <div className="mt-4">
+                      <div className="text-green-700 font-bold">
+                        الفائز: {auction.winner ? (auction.winner.name || auction.winner.email) : "لا يوجد"}
+                      </div>
+                      <div className="text-gray-700">
+                        السعر النهائي: {auction.currentPrice} ريال
+                      </div>
+                      {session && auction.winner && (session.user as any).id === auction.winner.id && (
+                        <div className="mt-2 text-blue-700 font-semibold">
+                          مبروك! لقد ربحت هذا المزاد. <Link href="/cart" className="underline">اذهب إلى السلة</Link>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Bid button for regular users only */}
-              {auction.status === "ACTIVE" && canBid(auction) && (
-                <button
-                  onClick={() => {
-                    setSelectedAuction(auction);
-                    setShowBidModal(true);
-                  }}
-                  className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 mt-2"
-                >
-                  تقديم مزايدة
-                </button>
-              )}
-
-              {/* View auction details for all users */}
-              <Link
-                href={`/auctions/${auction.id}`}
-                className="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 block text-center mt-2"
-              >
-                عرض تفاصيل المزاد
-              </Link>
-
-              {auction.status === "ENDED" && (
-                <div className="mt-4">
-                  <div className="text-green-700 font-bold">
-                    الفائز: {auction.winner ? (auction.winner.name || auction.winner.email) : "لا يوجد"}
-                  </div>
-                  <div className="text-gray-700">
-                    السعر النهائي: {auction.currentPrice} ريال
-                  </div>
-                  {session && auction.winner && (session.user as any).id === auction.winner.id && (
-                    <div className="mt-2 text-blue-700 font-semibold">
-                      مبروك! لقد ربحت هذا المزاد. <Link href="/cart" className="underline">اذهب إلى السلة</Link>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Show message if no auctions */}
-      {auctions.length === 0 && (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-semibold text-gray-600 mb-4">لا توجد مزادات حالياً</h3>
-          <p className="text-gray-500">سيتم إضافة مزادات جديدة قريباً</p>
-        </div>
+          {/* Show message if no auctions */}
+          {auctions.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-xl font-semibold text-gray-600 mb-4">لا توجد مزادات حالياً</h3>
+              <p className="text-gray-500">سيتم إضافة مزادات جديدة قريباً</p>
+            </div>
+          )}
+        </>
       )}
 
       {showBidModal && selectedAuction && (
@@ -537,7 +558,6 @@ export default function AuctionsPage() {
           </div>
         </div>
       )}
-    </div>
     </main>
   );
 } 

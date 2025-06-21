@@ -25,15 +25,15 @@ interface ExtendedSession {
 }
 
 interface LiveVideoProps {
-  auctionId: string;
-  isOwner: boolean;
+  channelName: string;
+  isOwner?: boolean;
 }
 
 // Agora configuration
 const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || "";
 const client: IAgoraRTCClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
-export default function LiveVideo({ auctionId, isOwner }: LiveVideoProps) {
+export default function LiveVideo({ channelName, isOwner }: LiveVideoProps) {
   const { data: session, status } = useSession() as { data: ExtendedSession | null; status: string };
   const [isStreaming, setIsStreaming] = useState(false);
   const [isWatching, setIsWatching] = useState(false);
@@ -105,7 +105,7 @@ export default function LiveVideo({ auctionId, isOwner }: LiveVideoProps) {
       [localAudioTrack.current, localVideoTrack.current] = await AgoraRTC.createMicrophoneAndCameraTracks();
       }
       // Join the channel
-      await client.join(appId, auctionId, null, null);
+      await client.join(appId, channelName, null, null);
       // Publish the tracks
       await client.publish([localAudioTrack.current, localVideoTrack.current]);
       // Play the local video
@@ -153,7 +153,7 @@ export default function LiveVideo({ auctionId, isOwner }: LiveVideoProps) {
 
   const startWatching = async () => {
     try {
-      await client.join(appId, auctionId, null, null);
+      await client.join(appId, channelName, null, null);
       setIsWatching(true);
       toast.success("جاري الاتصال بالبث المباشر");
 
