@@ -143,171 +143,173 @@ export default function CheckoutForm({ cart, total }: CheckoutFormProps) {
   return (
     <>
       <Script src="https://cdn.moyasar.com/js/v1/moyasar.js" strategy="beforeInteractive" onLoad={() => { setMoyasarReady(true); console.log("Moyasar script loaded (checkout)"); }} />
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="fullName" className="block text-sm font-medium mb-1">
-            الاسم الكامل
-          </label>
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            البريد الإلكتروني
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium mb-1">
-            رقم الهاتف
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium mb-1">
-            العنوان
-          </label>
-          <input
-            type="text"
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">الدفع</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="city" className="block text-sm font-medium mb-1">
-              المدينة
+            <label htmlFor="fullName" className="block text-sm font-medium mb-1">
+              الاسم الكامل
             </label>
             <input
               type="text"
-              id="city"
-              name="city"
-              value={formData.city}
+              id="fullName"
+              name="fullName"
+              value={formData.fullName}
               onChange={handleChange}
               required
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
-            <label htmlFor="postalCode" className="block text-sm font-medium mb-1">
-              الرمز البريدي
+            <label htmlFor="email" className="block text-sm font-medium mb-1">
+              البريد الإلكتروني
             </label>
             <input
-              type="text"
-              id="postalCode"
-              name="postalCode"
-              value={formData.postalCode}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               required
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            طريقة الدفع
-          </label>
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium mb-1">
+              رقم الهاتف
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="address" className="block text-sm font-medium mb-1">
+              العنوان
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
-            {paymentMethods.map((method) => (
-              <div
-                key={method.value}
-                className={`relative border rounded-lg p-4 cursor-pointer transition-colors ${
-                  formData.paymentMethod === method.value
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-blue-300"
-                }`}
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    paymentMethod: method.value,
-                  }))
-                }
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={method.value}
-                  checked={formData.paymentMethod === method.value}
-                  onChange={handleChange}
-                  className="absolute opacity-0"
-                />
-                <div className="flex items-center gap-3">
-                  {method.icon}
-                  <span className="font-medium">{method.label}</span>
-                </div>
-              </div>
-            ))}
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium mb-1">
+                المدينة
+              </label>
+              <input
+                type="text"
+                id="city"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="postalCode" className="block text-sm font-medium mb-1">
+                الرمز البريدي
+              </label>
+              <input
+                type="text"
+                id="postalCode"
+                name="postalCode"
+                value={formData.postalCode}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
-          disabled={loading}
-        >
-          {loading ? "جاري المعالجة..." : "إتمام الطلب والدفع"}
-        </button>
-      </form>
-      {showPayment && moyasarReady && (
-        <div className="mt-6">
-          {console.log("Rendering Moyasar payment widget. showPayment:", showPayment, "moyasarReady:", moyasarReady)}
-          <h3 className="text-lg font-bold mb-2">الدفع عبر مدى أو Apple Pay</h3>
-          <div id="moyasar-payment-checkout"></div>
-          <Script id="moyasar-init" strategy="afterInteractive">
-            {`
-              if (window.Moyasar) {
-                window.Moyasar.init({
-                  element: '#moyasar-payment-checkout',
-                  amount: ${total * 100},
-                  currency: 'SAR',
-                  description: 'دفع طلب متجر تمور',
-                  publishable_api_key: '${MOYASAR_PUBLISHABLE_KEY}',
-                  methods: ['mada', 'applepay'],
-                  on_completed: function(payment) {
-                    window.dispatchEvent(new CustomEvent('moyasar-paid', { detail: payment }));
-                  },
-                  on_failed: function() {
-                    alert('فشل الدفع. الرجاء المحاولة مرة أخرى.');
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              طريقة الدفع
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              {paymentMethods.map((method) => (
+                <div
+                  key={method.value}
+                  className={`relative border rounded-lg p-4 cursor-pointer transition-colors ${
+                    formData.paymentMethod === method.value
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      paymentMethod: method.value,
+                    }))
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={method.value}
+                    checked={formData.paymentMethod === method.value}
+                    onChange={handleChange}
+                    className="absolute opacity-0"
+                  />
+                  <div className="flex items-center gap-3">
+                    {method.icon}
+                    <span className="font-medium">{method.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            disabled={loading}
+          >
+            {loading ? "جاري المعالجة..." : "إتمام الطلب والدفع"}
+          </button>
+        </form>
+        {showPayment && moyasarReady && (
+          <div className="mt-6">
+            <h3>الدفع عبر مدى أو Apple Pay</h3>
+            <div id="moyasar-payment-checkout"></div>
+            <Script id="moyasar-init" strategy="afterInteractive">
+              {`
+                if (window.Moyasar) {
+                  window.Moyasar.init({
+                    element: '#moyasar-payment-checkout',
+                    amount: ${total * 100},
+                    currency: 'SAR',
+                    description: 'دفع طلب متجر تمور',
+                    publishable_api_key: '${MOYASAR_PUBLISHABLE_KEY}',
+                    methods: ['mada', 'applepay'],
+                    on_completed: function(payment) {
+                      window.dispatchEvent(new CustomEvent('moyasar-paid', { detail: payment }));
+                    },
+                    on_failed: function() {
+                      alert('فشل الدفع. الرجاء المحاولة مرة أخرى.');
+                    }
+                  });
+                }
+                window.addEventListener('moyasar-paid', function(e) {
+                  if (e.detail && e.detail.id) {
+                    window.__handleMoyasarPayment && window.__handleMoyasarPayment(e.detail);
                   }
                 });
-              }
-              window.addEventListener('moyasar-paid', function(e) {
-                if (e.detail && e.detail.id) {
-                  window.__handleMoyasarPayment && window.__handleMoyasarPayment(e.detail);
-                }
-              });
-              window.__handleMoyasarPayment = ${handleMoyasarPayment.toString()};
-            `}
-          </Script>
-          {paymentStatus && <div className="mt-4 text-center font-bold">{paymentStatus}</div>}
-        </div>
-      )}
+                window.__handleMoyasarPayment = ${handleMoyasarPayment.toString()};
+              `}
+            </Script>
+            {paymentStatus && <div className="mt-4 text-center font-bold">{paymentStatus}</div>}
+          </div>
+        )}
+      </div>
     </>
   );
 } 
