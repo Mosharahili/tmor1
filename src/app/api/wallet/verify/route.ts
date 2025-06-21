@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/authOptions";
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { paymentId } = await request.json();
+  const { paymentId } = await req.json();
   if (!paymentId) {
     return NextResponse.json({ error: "Missing paymentId" }, { status: 400 });
   }

@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { redirect, useRouter } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import StoreManagementClient from './StoreManagementClient';
 import { ArrowRight } from "lucide-react";
 
