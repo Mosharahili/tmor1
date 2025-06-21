@@ -4,6 +4,12 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import Script from "next/script";
 
+declare global {
+  interface Window {
+    Moyasar: any;
+  }
+}
+
 const MOYASAR_PUBLISHABLE_KEY = "pk_test_z5MZwKtzQfRw7sUFoUVYtsotbzPBJNf6DoND2osN";
 
 export default function WalletDepositPage() {
@@ -26,7 +32,7 @@ export default function WalletDepositPage() {
         publishable_api_key: MOYASAR_PUBLISHABLE_KEY,
         methods: ["mada", "applepay"],
         callback_url: window.location.href, // reload after payment
-        on_completed: async function (payment) {
+        on_completed: async function (payment: { id: string }) {
           // Call backend to verify and update wallet
           const res = await fetch("/api/wallet/verify", {
             method: "POST",
