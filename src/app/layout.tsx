@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { Toaster } from "react-hot-toast";
 import TopIconsBar from "@/components/TopIconsBar";

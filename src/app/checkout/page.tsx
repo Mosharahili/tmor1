@@ -1,19 +1,9 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import CheckoutForm from "./CheckoutForm";
-import { Session } from "next-auth";
 import { Cart, CartItem, Product } from "@prisma/client";
-
-interface ExtendedSession extends Session {
-  user: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
 
 interface CartWithItems extends Cart {
   items: (CartItem & {
@@ -22,10 +12,10 @@ interface CartWithItems extends Cart {
 }
 
 export default async function CheckoutPage() {
-  const session = await getServerSession(authOptions) as ExtendedSession;
+  const session = await getServerSession(authOptions);
 
-  if (!session?.user) {
-    redirect("/login");
+  if (!session?.user?.id) {
+    redirect("/login?callbackUrl=/checkout");
   }
 
   const cart = await prisma.cart.findUnique({
@@ -39,54 +29,43 @@ export default async function CheckoutPage() {
         },
       },
     },
-  }) as CartWithItems | null;
+  });
 
   if (!cart || cart.items.length === 0) {
-    redirect("/cart");
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-3xl font-bold">Your Cart is Empty</h1>
+        <p className="mt-4">You have no items in your shopping cart.</p>
+      </div>
+    );
   }
 
-  const total = cart.items.reduce(
-    (sum: number, item: CartItem & { product: Product }) =>
-      sum + item.product.price * item.quantity,
+  // Ensure we only pass items with products to the checkout form
+  const itemsWithProducts = cart.items
+    .filter((item) => item.product !== null)
+    .map((item) => item as CartItem & { product: Product });
+
+  if (itemsWithProducts.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-3xl font-bold">No Products in Cart</h1>
+        <p className="mt-4">
+          Your cart does not contain any products available for direct purchase.
+        </p>
+      </div>
+    );
+  }
+
+  const cartForCheckout: CartWithItems = { ...cart, items: itemsWithProducts };
+  const total = itemsWithProducts.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
     0
   );
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-8">إتمام الطلب</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">تفاصيل الطلب</h2>
-          <div className="space-y-4">
-            {cart.items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 p-4 border rounded-lg"
-              >
-                <div className="flex-1">
-                  <h3 className="font-semibold">{item.product.name}</h3>
-                  <p className="text-gray-600">
-                    {item.quantity} × {item.product.price} ريال
-                  </p>
-                </div>
-                <p className="font-semibold">
-                  {item.product.price * item.quantity} ريال
-                </p>
-              </div>
-            ))}
-            <div className="border-t pt-4">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold">المجموع:</span>
-                <span className="text-xl font-bold">{total} ريال</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">معلومات التوصيل</h2>
-          <CheckoutForm cart={cart} total={total} />
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+      <CheckoutForm cart={cartForCheckout} total={total} />
     </div>
   );
 } 
