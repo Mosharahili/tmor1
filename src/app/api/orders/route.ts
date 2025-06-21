@@ -1,106 +1,17 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { Session } from "next-auth";
-import { OrderStatus, PaymentMethod } from "@prisma/client";
 
-interface ExtendedSession extends Session {
-  user: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
 
-const orderSchema = z.object({
-  items: z.array(
-    z.object({
-      productId: z.string(),
-      quantity: z.number().min(1),
-      price: z.number().min(0),
-    })
-  ),
-  total: z.number().min(0),
-  shippingInfo: z.object({
-    fullName: z.string().min(1),
-    email: z.string().email(),
-    phone: z.string().min(1),
-    address: z.string().min(1),
-    city: z.string().min(1),
-    postalCode: z.string().min(1),
-    paymentMethod: z.nativeEnum(PaymentMethod),
-  }),
-});
-
-export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions) as ExtendedSession;
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { message: "غير مصرح" },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-    const { items, total, shippingInfo } = orderSchema.parse(body);
-
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        userId: session.user.id,
-        total,
-        status: OrderStatus.PENDING,
-        shippingInfo,
-        items: {
-          create: items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json(order);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { message: error.errors[0].message },
-        { status: 400 }
-      );
-    }
-
-    console.error("Order error:", error);
-    return NextResponse.json(
-      { message: "حدث خطأ ما" },
-      { status: 500 }
-    );
+  if (!session?.user?.id) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-}
 
-export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions) as ExtendedSession;
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { message: "غير مصرح" },
-        { status: 401 }
-      );
-    }
-
     const orders = await prisma.order.findMany({
       where: {
         userId: session.user.id,
@@ -109,6 +20,7 @@ export async function GET(request: Request) {
         items: {
           include: {
             product: true,
+            auction: true,
           },
         },
       },
@@ -119,9 +31,85 @@ export async function GET(request: Request) {
 
     return NextResponse.json(orders);
   } catch (error) {
-    console.error("Order error:", error);
+    console.error("Error fetching orders:", error);
     return NextResponse.json(
-      { message: "حدث خطأ ما" },
+      { message: "Error fetching orders" },
+      { status: 500 }
+    );
+  }
+}
+
+const orderItemSchema = z.object({
+  productId: z.string().optional(),
+  auctionId: z.string().optional(),
+  quantity: z.number().min(1),
+  price: z.number(),
+});
+
+const createOrderSchema = z.object({
+  items: z.array(orderItemSchema),
+  total: z.number(),
+  shippingInfo: z.object({
+    address: z.string(),
+    city: z.string(),
+    postalCode: z.string(),
+    country: z.string(),
+  }),
+});
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+  
+  const body = await req.json();
+
+  const result = createOrderSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json(
+      { message: "Invalid request body", error: result.error.errors },
+      { status: 400 }
+    );
+  }
+
+  const { items, total, shippingInfo } = result.data;
+
+  try {
+    const newOrder = await prisma.order.create({
+      data: {
+        userId: session.user.id,
+        total,
+        shippingInfo,
+        items: {
+          create: items.map((item) => ({
+            quantity: item.quantity,
+            price: item.price,
+            productId: item.productId,
+            auctionId: item.auctionId,
+          })),
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+    
+    // Clear cart after creating order
+    await prisma.cart.update({
+      where: { userId: session.user.id },
+      data: {
+        items: {
+          deleteMany: {},
+        },
+      },
+    });
+
+    return NextResponse.json(newOrder, { status: 201 });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    return NextResponse.json(
+      { message: "Error creating order" },
       { status: 500 }
     );
   }

@@ -1,34 +1,41 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 import { AuctionStatus, Auction, Bid } from '@prisma/client';
 
-type AuctionWithBids = Auction & {
-  bids: Bid[];
-};
+type AuctionWithBids = Auction & { bids: Bid[] };
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status');
+
   try {
-    const auctions = await prisma.auction.findMany({
-      orderBy: {
-        createdAt: 'desc',
+    const auctions: AuctionWithBids[] = await prisma.auction.findMany({
+      where: {
+        status: status ? (status as AuctionStatus) : undefined,
       },
       include: {
-        bids: {
-          orderBy: {
-            amount: 'desc',
-          },
-          take: 1,
-        },
-        winner: true,
+        bids: true,
+      },
+      orderBy: {
+        startDate: 'desc',
       },
     });
-    return NextResponse.json(auctions);
+
+    const auctionsWithHighestBid = auctions.map((auction) => {
+      const highestBid = auction.bids.reduce(
+        (max, bid) => (bid.amount > max ? bid.amount : max),
+        auction.startPrice
+      );
+      return { ...auction, highestBid };
+    });
+
+    return NextResponse.json(auctionsWithHighestBid);
   } catch (error) {
     console.error('Error fetching auctions:', error);
     return NextResponse.json(
-      { error: 'Error fetching auctions' },
+      { message: 'حدث خطأ أثناء جلب المزادات' },
       { status: 500 }
     );
   }
