@@ -106,11 +106,11 @@ export async function PATCH(request: Request) {
       );
     }
 
-    let status;
+    let status: AuctionStatus;
     if (action === 'start') {
-      status = 'ACTIVE';
+      status = AuctionStatus.ACTIVE;
     } else if (action === 'end') {
-      status = 'ENDED';
+      status = AuctionStatus.ENDED;
     } else {
       return NextResponse.json(
         { error: "Invalid action" },
@@ -132,7 +132,7 @@ export async function PATCH(request: Request) {
     });
 
     // If ending the auction, set the winner
-    if (action === 'end' && auction.bids.length > 0) {
+    if (action === 'end' && auction.bids && auction.bids.length > 0) {
       await prisma.auction.update({
         where: { id },
         data: {

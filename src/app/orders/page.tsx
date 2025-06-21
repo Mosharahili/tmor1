@@ -70,11 +70,13 @@ export default async function OrdersPage() {
                   {order.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
                       <div className="flex items-center">
-                        {item.product.image && (
-                          <img src={item.product.image} alt={item.product.name} className="w-16 h-16 object-cover rounded-md mr-4" />
+                        {item.product && item.product.images && item.product.images.length > 0 ? (
+                          <img src={item.product.images[0]} alt={item.product.name} className="w-16 h-16 object-cover rounded-md mr-4" />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded-md mr-4"></div>
                         )}
                         <div>
-                          <p className="font-semibold text-gray-800">{item.product.name}</p>
+                          <p className="font-semibold text-gray-800">{item.product ? item.product.name : 'Product not available'}</p>
                           <p className="text-sm text-gray-500">
                             {item.quantity} x ${item.price.toFixed(2)}
                           </p>
@@ -105,7 +107,9 @@ export default async function OrdersPage() {
                      <h3 className="font-semibold text-gray-700 mb-2">Order Summary</h3>
                      <div className="text-sm text-gray-600 space-y-1">
                         <p className="flex justify-between"><span>Subtotal</span> <span>${order.total.toFixed(2)}</span></p>
-                        <p className="flex justify-between"><span>Payment Method</span> <span className="font-semibold">{order.paymentMethod}</span></p>
+                        {typeof order.shippingInfo === 'object' && order.shippingInfo !== null && !Array.isArray(order.shippingInfo) && (order.shippingInfo as any).paymentMethod &&
+                          <p className="flex justify-between"><span>Payment Method</span> <span className="font-semibold">{(order.shippingInfo as any).paymentMethod}</span></p>
+                        }
                      </div>
                     <div className="border-t border-gray-200 mt-2 pt-2 text-right">
                       <p className="text-lg font-bold text-gray-800">
