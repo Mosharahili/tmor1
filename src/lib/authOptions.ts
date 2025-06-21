@@ -28,19 +28,29 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'البريد الإلكتروني', type: 'email', placeholder: 'your@email.com' },
-        password: { label: 'كلمة المرور', type: 'password' },
+        login: { label: 'Email or Phone', type: 'text', placeholder: 'your@email.com or phone number' },
+        password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials: Record<string, string> | undefined) {
-        if (!credentials?.email || !credentials?.password) return null;
-        
+      async authorize(credentials) {
+        if (!credentials?.login || !credentials?.password) {
+          return null;
+        }
+
+        // Check if login is an email or a phone number
+        const isEmail = credentials.login.includes('@');
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: isEmail
+            ? { email: credentials.login }
+            : { phone: credentials.login },
         });
 
-        if (!user || !user.password) return null;
+        if (!user || !user.password) {
+          return null;
+        }
 
         const isValid = await compare(credentials.password, user.password);
+
         if (isValid) {
           return {
             id: user.id,
@@ -49,6 +59,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
           };
         }
+
         return null;
       },
     }),
