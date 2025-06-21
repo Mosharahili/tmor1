@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { Product, Auction, OrderItem } from "@prisma/client";
 import HamburgerMenu from "@/components/HamburgerMenu";
 
@@ -46,7 +46,7 @@ type Settings = {
   updatedAt: Date;
 };
 
-async function getActiveAuctions(): Promise<AuctionWithBids[]> {
+async function getActiveAuctions(): Promise<Auction[]> {
   const auctions = await prisma.auction.findMany({
     where: {
       status: "ACTIVE",
@@ -64,13 +64,16 @@ async function getActiveAuctions(): Promise<AuctionWithBids[]> {
   return auctions;
 }
 
-async function getUpcomingAuctions(): Promise<AuctionWithBids[]> {
+async function getUpcomingAuctions(): Promise<Auction[]> {
   const auctions = await prisma.auction.findMany({
     where: {
       status: "UPCOMING",
     },
     orderBy: {
       startDate: "asc",
+    },
+    include: {
+      bids: true,
     },
     take: 4,
   });
