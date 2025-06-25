@@ -161,7 +161,7 @@ export default function AuctionPage({ params }: { params: { id: string } }) {
       <div className="max-w-4xl mx-auto">
         {/* Live Video for this auction */}
         <div className="mb-8">
-          <LiveVideo auctionId={auction.id} isOwner={isOwner} />
+          <LiveVideo channelName={auction.id} isOwner={isOwner} />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">{auction.title}</h1>
 
