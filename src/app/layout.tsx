@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 import TopIconsBar from "@/components/TopIconsBar";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import { usePathname } from "next/navigation";
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,7 +31,13 @@ export default async function RootLayout({
           <TopIconsBar />
           <HamburgerMenu />
           <Toaster />
-          {children}
+          <main className="flex-1">
+            {children}
+            <Analytics />
+          </main>
+          <footer className="bg-gray-800 text-white p-4 text-center">
+            <p>&copy; 2024 Your Company. All rights reserved.</p>
+          </footer>
         </SessionProvider>
       </body>
     </html>
